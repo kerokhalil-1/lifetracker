@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { today } from '../utils/dateUtils.js';
 import { computeElapsedWork, computeElapsedBreak } from '../utils/sessionUtils.js';
 import {
-  createSession, updateSession, getActiveSession, nowTimestamp,
+  createSession, updateSession, getActiveSession, nowTimestamp, invalidateSessionsCache,
 } from '../services/sessionService.js';
 import { updateCourse } from '../services/courseService.js';
 import { useErrorLog } from '../context/ErrorLogContext.jsx';
@@ -146,6 +146,7 @@ const useSession = () => {
         ...formData,
       };
       await updateSession(sessionId, updates);
+      invalidateSessionsCache(); // history tab should reload after finish
 
       // Increment the parent course's cumulative stats
       if (session?.courseId) {
