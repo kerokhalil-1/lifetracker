@@ -5,18 +5,20 @@ import { listTopics, listAllTasks } from '../services/studyService.js';
 import { getAllSleepLogs, getSettings } from '../services/sleepService.js';
 import { getWeekDays, getMonthDays, today } from '../utils/dateUtils.js';
 import { calcAverage, countSleepTargetHits, groupBy } from '../utils/statsUtils.js';
+import { useErrorLog } from '../context/ErrorLogContext.jsx';
 
 const useProgress = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { addError } = useErrorLog();
 
   const load = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const [routineDays, topics, tasks, sleepLogs, settings] = await Promise.all([
+      const [routineDays, topics, tasks, sleepLogs] = await Promise.all([
         getRecentRoutineDays(60),
         listTopics(),
         listAllTasks(),
@@ -28,13 +30,11 @@ const useProgress = () => {
       const weekDays = getWeekDays();
       const monthDays = getMonthDays();
 
-      // Daily
       const todayRoutine = routineDays.find((d) => d.date === todayStr);
       const todayTopics = topics.filter((t) => t.date === todayStr);
       const todayTasks = tasks.filter((t) => t.scheduledDate === todayStr);
       const todaySleep = sleepLogs.find((l) => l.date === todayStr);
 
-      // Weekly
       const weekRoutine = routineDays.filter((d) => weekDays.includes(d.date));
       const weekTopics = topics.filter((t) => weekDays.includes(t.date));
       const weekSleep = sleepLogs.filter((l) => weekDays.includes(l.date));
@@ -42,7 +42,6 @@ const useProgress = () => {
       const weekStudyMins = weekTopics.reduce((acc, t) => acc + (t.timeSpentMinutes || 0), 0);
       const weekSleepHits = countSleepTargetHits(weekSleep);
 
-      // Study streak calculation
       const tasksByDate = groupBy(weekTasks, (t) => t.scheduledDate);
       let studyStreak = 0;
       const sortedDays = weekDays.slice().reverse();
@@ -51,13 +50,11 @@ const useProgress = () => {
         else break;
       }
 
-      // Monthly
       const monthRoutine = routineDays.filter((d) => monthDays.includes(d.date));
       const monthTopics = topics.filter((t) => monthDays.includes(t.date));
       const monthSleep = sleepLogs.filter((l) => monthDays.includes(l.date));
       const monthStudyMins = monthTopics.reduce((acc, t) => acc + (t.timeSpentMinutes || 0), 0);
 
-      // Weekly breakdown for best/worst
       const weekNum = (dateStr) => {
         const d = new Date(dateStr);
         const start = new Date(d.getFullYear(), d.getMonth(), 1);
@@ -106,10 +103,11 @@ const useProgress = () => {
       });
     } catch (err) {
       setError(err.message);
+      addError('useProgress', err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [addError]);
 
   useEffect(() => { load(); }, [load]);
 

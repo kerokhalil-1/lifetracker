@@ -5,4 +5,5 @@ export const ROUTES = {
   STUDY: '/study',
   SLEEP: '/sleep',
   PROGRESS: '/progress',
+  ERRORS: '/errors',
 };

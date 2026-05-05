@@ -1,14 +1,16 @@
 // Hook for loading and managing today's routine data
 import { useState, useEffect, useCallback } from 'react';
 import { today } from '../utils/dateUtils.js';
-import { getRoutineDay, saveRoutineDay, updateRoutineItem, addFlexibleItem, initRoutineDay, getRecentRoutineDays } from '../services/routineService.js';
+import { getRoutineDay, updateRoutineItem, addFlexibleItem, initRoutineDay, getRecentRoutineDays } from '../services/routineService.js';
 import { getSettings } from '../services/sleepService.js';
+import { useErrorLog } from '../context/ErrorLogContext.jsx';
 
 const useRoutine = (dateStr = today()) => {
   const [routineDay, setRoutineDay] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { addError } = useErrorLog();
 
   const load = useCallback(async () => {
     try {
@@ -22,10 +24,11 @@ const useRoutine = (dateStr = today()) => {
       setHistory(hist);
     } catch (err) {
       setError(err.message);
+      addError('useRoutine', err);
     } finally {
       setLoading(false);
     }
-  }, [dateStr]);
+  }, [dateStr, addError]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -35,6 +38,7 @@ const useRoutine = (dateStr = today()) => {
       await load();
     } catch (err) {
       setError(err.message);
+      addError('useRoutine.toggleItem', err);
     }
   };
 
@@ -45,6 +49,7 @@ const useRoutine = (dateStr = today()) => {
       await load();
     } catch (err) {
       setError(err.message);
+      addError('useRoutine.addItem', err);
     }
   };
 

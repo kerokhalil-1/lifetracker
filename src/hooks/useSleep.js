@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { saveSleepLog, getSleepLog, getLast7Nights, getSettings, saveSettings } from '../services/sleepService.js';
 import { today } from '../utils/dateUtils.js';
+import { useErrorLog } from '../context/ErrorLogContext.jsx';
 
 const useSleep = () => {
   const [todayLog, setTodayLog] = useState(null);
@@ -9,6 +10,7 @@ const useSleep = () => {
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { addError } = useErrorLog();
 
   const load = useCallback(async () => {
     try {
@@ -24,10 +26,11 @@ const useSleep = () => {
       setSettings(s);
     } catch (err) {
       setError(err.message);
+      addError('useSleep', err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [addError]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -37,6 +40,7 @@ const useSleep = () => {
       await load();
     } catch (err) {
       setError(err.message);
+      addError('useSleep.logSleep', err);
     }
   };
 
@@ -46,6 +50,7 @@ const useSleep = () => {
       setSettings(newSettings);
     } catch (err) {
       setError(err.message);
+      addError('useSleep.updateSettings', err);
     }
   };
 

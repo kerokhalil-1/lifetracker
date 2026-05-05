@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { today } from '../utils/dateUtils.js';
 import { addTopic, listTopics, addTask, updateTask, deleteTask, listTasksByDate, listAllTasks } from '../services/studyService.js';
+import { useErrorLog } from '../context/ErrorLogContext.jsx';
 
 const useStudy = (dateStr = today()) => {
   const [todayTasks, setTodayTasks] = useState([]);
@@ -9,6 +10,7 @@ const useStudy = (dateStr = today()) => {
   const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { addError } = useErrorLog();
 
   const load = useCallback(async () => {
     try {
@@ -24,10 +26,11 @@ const useStudy = (dateStr = today()) => {
       setTopics(topicList);
     } catch (err) {
       setError(err.message);
+      addError('useStudy', err);
     } finally {
       setLoading(false);
     }
-  }, [dateStr]);
+  }, [dateStr, addError]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -37,6 +40,7 @@ const useStudy = (dateStr = today()) => {
       await load();
     } catch (err) {
       setError(err.message);
+      addError('useStudy.addTask', err);
     }
   };
 
@@ -46,6 +50,7 @@ const useStudy = (dateStr = today()) => {
       await load();
     } catch (err) {
       setError(err.message);
+      addError('useStudy.toggleTask', err);
     }
   };
 
@@ -55,6 +60,7 @@ const useStudy = (dateStr = today()) => {
       await load();
     } catch (err) {
       setError(err.message);
+      addError('useStudy.removeTask', err);
     }
   };
 
@@ -64,6 +70,7 @@ const useStudy = (dateStr = today()) => {
       await load();
     } catch (err) {
       setError(err.message);
+      addError('useStudy.addTopic', err);
     }
   };
 
