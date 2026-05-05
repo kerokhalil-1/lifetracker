@@ -1,8 +1,9 @@
 // Desktop sidebar navigation with page links and active state
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Sunrise, BookOpen, Moon, TrendingUp, Bug } from 'lucide-react';
+import { LayoutDashboard, Sunrise, BookOpen, Moon, TrendingUp, Bug, Zap } from 'lucide-react';
 import { ROUTES } from '../../constants/routes.js';
 import { useErrorLog } from '../../context/ErrorLogContext.jsx';
+import { usePerf } from '../../context/PerfContext.jsx';
 import en from '../../locales/en.js';
 
 const mainNav = [
@@ -15,7 +16,9 @@ const mainNav = [
 
 const Sidebar = () => {
   const { errors } = useErrorLog();
+  const { entries } = usePerf();
   const unread = errors.length;
+  const slowOps = entries.filter((e) => e.type === 'firestore' && e.duration >= 1000).length;
 
   return (
     <aside className="hidden lg:flex flex-col w-56 min-h-screen bg-white border-r border-slate-200 py-8 px-4 fixed top-0 left-0">
@@ -46,6 +49,28 @@ const Sidebar = () => {
           </NavLink>
         ))}
       </nav>
+
+      {/* Speed monitor link */}
+      <NavLink
+        to={ROUTES.PERF}
+        className={({ isActive }) =>
+          `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors mt-1 ${
+            isActive ? 'bg-sky-50 text-sky-700' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-700'
+          }`
+        }
+      >
+        {({ isActive }) => (
+          <>
+            <Zap size={18} className={isActive ? 'text-sky-500' : ''} />
+            <span>Speed Monitor</span>
+            {slowOps > 0 && (
+              <span className="ml-auto bg-amber-500 text-white text-xs font-bold rounded-full px-1.5 py-0.5 leading-none">
+                {slowOps}
+              </span>
+            )}
+          </>
+        )}
+      </NavLink>
 
       {/* Error log link always visible at the bottom */}
       <NavLink

@@ -6,4 +6,5 @@ export const ROUTES = {
   SLEEP: '/sleep',
   PROGRESS: '/progress',
   ERRORS: '/errors',
+  PERF: '/perf',
 };

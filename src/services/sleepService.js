@@ -3,56 +3,35 @@ import { doc, getDoc, setDoc, serverTimestamp, collection, getDocs, query, order
 import { db } from './firebase.js';
 import { COLLECTIONS } from '../constants/collections.js';
 import { DEFAULTS } from '../constants/defaults.js';
+import { timed } from '../utils/perfLog.js';
 
-// Save or update a sleep log for a given date
-export const saveSleepLog = async (dateStr, logData) => {
-  try {
-    const ref = doc(db, COLLECTIONS.SLEEP_LOGS, dateStr);
-    await setDoc(ref, { ...logData, date: dateStr, createdAt: serverTimestamp() }, { merge: true });
-  } catch (err) {
-    console.error('saveSleepLog error:', err);
-    throw err;
-  }
-};
+export const saveSleepLog = (dateStr, logData) =>
+  timed(`saveSleepLog(${dateStr})`, 'firestore', () =>
+    setDoc(doc(db, COLLECTIONS.SLEEP_LOGS, dateStr), { ...logData, date: dateStr, createdAt: serverTimestamp() }, { merge: true })
+  );
 
-// Fetch a sleep log for a given date
-export const getSleepLog = async (dateStr) => {
-  try {
+export const getSleepLog = (dateStr) =>
+  timed(`getSleepLog(${dateStr})`, 'firestore', async () => {
     const snap = await getDoc(doc(db, COLLECTIONS.SLEEP_LOGS, dateStr));
     return snap.exists() ? snap.data() : null;
-  } catch (err) {
-    console.error('getSleepLog error:', err);
-    throw err;
-  }
-};
+  });
 
-// Get the last N sleep logs ordered by date descending
-export const getLast7Nights = async (count = 7) => {
-  try {
+export const getLast7Nights = (count = 7) =>
+  timed(`getLast7Nights(${count})`, 'firestore', async () => {
     const q = query(collection(db, COLLECTIONS.SLEEP_LOGS), orderBy('date', 'desc'), limit(count));
     const snap = await getDocs(q);
     return snap.docs.map((d) => d.data());
-  } catch (err) {
-    console.error('getLast7Nights error:', err);
-    throw err;
-  }
-};
+  });
 
-// Get all sleep logs for stats calculation
-export const getAllSleepLogs = async () => {
-  try {
+export const getAllSleepLogs = () =>
+  timed('getAllSleepLogs', 'firestore', async () => {
     const q = query(collection(db, COLLECTIONS.SLEEP_LOGS), orderBy('date', 'desc'));
     const snap = await getDocs(q);
     return snap.docs.map((d) => d.data());
-  } catch (err) {
-    console.error('getAllSleepLogs error:', err);
-    throw err;
-  }
-};
+  });
 
-// Get or create user settings (sleep targets)
-export const getSettings = async () => {
-  try {
+export const getSettings = () =>
+  timed('getSettings', 'firestore', async () => {
     const snap = await getDoc(doc(db, COLLECTIONS.SETTINGS, DEFAULTS.SETTINGS_DOC_ID));
     return snap.exists() ? snap.data() : {
       targetSleepTime: DEFAULTS.TARGET_SLEEP_TIME,
@@ -60,18 +39,9 @@ export const getSettings = async () => {
       fixedRoutineItems: DEFAULTS.FIXED_ROUTINE_ITEMS,
       currentCourse: DEFAULTS.CURRENT_COURSE,
     };
-  } catch (err) {
-    console.error('getSettings error:', err);
-    throw err;
-  }
-};
+  });
 
-// Save user settings to Firestore
-export const saveSettings = async (settings) => {
-  try {
-    await setDoc(doc(db, COLLECTIONS.SETTINGS, DEFAULTS.SETTINGS_DOC_ID), settings, { merge: true });
-  } catch (err) {
-    console.error('saveSettings error:', err);
-    throw err;
-  }
-};
+export const saveSettings = (settings) =>
+  timed('saveSettings', 'firestore', () =>
+    setDoc(doc(db, COLLECTIONS.SETTINGS, DEFAULTS.SETTINGS_DOC_ID), settings, { merge: true })
+  );
