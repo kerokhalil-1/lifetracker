@@ -1,19 +1,28 @@
-// Root app component — sets up routing, error capture, perf monitoring, and shared layout
-import { useCallback } from 'react';
+// Root app component — routing, error capture, perf monitoring, lazy-loaded pages
+import { useCallback, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ROUTES } from './constants/routes.js';
 import { ErrorLogProvider, useErrorLog } from './context/ErrorLogContext.jsx';
 import { PerfProvider } from './context/PerfContext.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
+import Spinner from './components/ui/Spinner.jsx';
 import Sidebar from './components/layout/Sidebar.jsx';
 import MobileNav from './components/layout/MobileNav.jsx';
-import DashboardPage from './pages/DashboardPage.jsx';
-import RoutinePage from './pages/RoutinePage.jsx';
-import StudyPage from './pages/StudyPage.jsx';
-import SleepPage from './pages/SleepPage.jsx';
-import ProgressPage from './pages/ProgressPage.jsx';
-import ErrorLogPage from './pages/ErrorLogPage.jsx';
-import PerfPage from './pages/PerfPage.jsx';
+
+// Lazy-load every page so each route is its own JS chunk (faster initial load)
+const DashboardPage = lazy(() => import('./pages/DashboardPage.jsx'));
+const RoutinePage   = lazy(() => import('./pages/RoutinePage.jsx'));
+const StudyPage     = lazy(() => import('./pages/StudyPage.jsx'));
+const SleepPage     = lazy(() => import('./pages/SleepPage.jsx'));
+const ProgressPage  = lazy(() => import('./pages/ProgressPage.jsx'));
+const ErrorLogPage  = lazy(() => import('./pages/ErrorLogPage.jsx'));
+const PerfPage      = lazy(() => import('./pages/PerfPage.jsx'));
+
+const PageFallback = () => (
+  <div className="lg:ml-56 min-h-screen flex items-center justify-center bg-slate-50">
+    <Spinner size="lg" />
+  </div>
+);
 
 // Inner component so providers can access the router context
 const AppRoutes = () => {
@@ -23,22 +32,23 @@ const AppRoutes = () => {
   }, [addError]);
 
   return (
-    // PerfProvider must be inside BrowserRouter so it can use useLocation
     <PerfProvider>
       <ErrorBoundary onError={handleBoundaryError}>
         <div className="min-h-screen bg-slate-50">
           <Sidebar />
           <MobileNav />
-          <Routes>
-            <Route path={ROUTES.DASHBOARD}  element={<DashboardPage />} />
-            <Route path={ROUTES.ROUTINE}    element={<RoutinePage />} />
-            <Route path={ROUTES.STUDY}      element={<StudyPage />} />
-            <Route path={ROUTES.SLEEP}      element={<SleepPage />} />
-            <Route path={ROUTES.PROGRESS}   element={<ProgressPage />} />
-            <Route path={ROUTES.ERRORS}     element={<ErrorLogPage />} />
-            <Route path={ROUTES.PERF}       element={<PerfPage />} />
-            <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
-          </Routes>
+          <Suspense fallback={<PageFallback />}>
+            <Routes>
+              <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
+              <Route path={ROUTES.ROUTINE}   element={<RoutinePage />} />
+              <Route path={ROUTES.STUDY}     element={<StudyPage />} />
+              <Route path={ROUTES.SLEEP}     element={<SleepPage />} />
+              <Route path={ROUTES.PROGRESS}  element={<ProgressPage />} />
+              <Route path={ROUTES.ERRORS}    element={<ErrorLogPage />} />
+              <Route path={ROUTES.PERF}      element={<PerfPage />} />
+              <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
+            </Routes>
+          </Suspense>
         </div>
       </ErrorBoundary>
     </PerfProvider>

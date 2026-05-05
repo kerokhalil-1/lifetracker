@@ -1,5 +1,5 @@
 // React context layer over the perfLog singleton — drives the UI
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { perfLog } from '../utils/perfLog.js';
@@ -10,17 +10,15 @@ export const usePerf = () => useContext(PerfContext);
 export const PerfProvider = ({ children }) => {
   const [entries, setEntries] = useState(() => perfLog.getEntries());
   const location = useLocation();
+  // Track which one-shot browser events we've already recorded to prevent duplicates
+  const recordedBrowserEvents = useRef(new Set());
 
   // Keep state in sync with the singleton
   useEffect(() => perfLog.subscribe(setEntries), []);
 
-  // Track every route navigation — measure from the moment location changes
-  const navStartRef = { current: null };
+  // Track every route navigation
   useEffect(() => {
-    const start = performance.now();
-    const label = `Navigate → ${location.pathname}`;
-    // Record the navigation event itself immediately
-    perfLog.record({ label, type: 'navigation', duration: Math.round(performance.now() - start), status: 'ok' });
+    perfLog.record({ label: `Navigate → ${location.pathname}`, type: 'navigation', duration: 0, status: 'ok' });
   }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Track every meaningful click — capture the target label
@@ -40,31 +38,42 @@ export const PerfProvider = ({ children }) => {
     return () => document.removeEventListener('click', handler, { capture: true });
   }, []);
 
-  // Record browser-reported Web Vitals via PerformanceObserver
+  // Record browser Web Vitals once per page load — guard against duplicate observer fires
   useEffect(() => {
     const observers = [];
+    const rec = recordedBrowserEvents.current;
 
-    const observe = (type, fn) => {
+    const once = (key, fn) => {
+      if (rec.has(key)) return;
+      rec.add(key);
+      fn();
+    };
+
+    const observe = (type, handler) => {
       try {
-        const obs = new PerformanceObserver((list) => list.getEntries().forEach(fn));
+        const obs = new PerformanceObserver((list) => list.getEntries().forEach(handler));
         obs.observe({ type, buffered: true });
         observers.push(obs);
-      } catch { /* unsupported */ }
+      } catch { /* browser doesn't support this type */ }
     };
 
     observe('navigation', (e) => {
-      perfLog.record({ label: 'Page load (domComplete)', type: 'browser', duration: Math.round(e.domComplete), status: 'ok' });
-      perfLog.record({ label: 'DOM interactive', type: 'browser', duration: Math.round(e.domInteractive), status: 'ok' });
-      perfLog.record({ label: 'DNS lookup', type: 'browser', duration: Math.round(e.domainLookupEnd - e.domainLookupStart), status: 'ok' });
+      once('nav-domComplete',   () => perfLog.record({ label: 'Page load (domComplete)', type: 'browser', duration: Math.round(e.domComplete), status: 'ok' }));
+      once('nav-domInteractive',() => perfLog.record({ label: 'DOM interactive',         type: 'browser', duration: Math.round(e.domInteractive), status: 'ok' }));
+      once('nav-dns',           () => perfLog.record({ label: 'DNS lookup',              type: 'browser', duration: Math.round(e.domainLookupEnd - e.domainLookupStart), status: 'ok' }));
     });
 
     observe('largest-contentful-paint', (e) => {
+      // LCP fires multiple times; only keep the last one (largest value seen)
+      const key = 'lcp';
+      rec.delete(key); // allow overwrite with latest
+      once(key, () => {});
       perfLog.record({ label: 'LCP (Largest Contentful Paint)', type: 'browser', duration: Math.round(e.startTime), status: e.startTime < 2500 ? 'ok' : e.startTime < 4000 ? 'warn' : 'error' });
     });
 
     observe('layout-shift', (e) => {
       if (e.hadRecentInput) return;
-      perfLog.record({ label: `Layout shift (CLS score: ${e.value.toFixed(4)})`, type: 'browser', duration: Math.round(e.value * 1000), status: e.value < 0.1 ? 'ok' : 'warn' });
+      perfLog.record({ label: `Layout shift (CLS: ${e.value.toFixed(4)})`, type: 'browser', duration: Math.round(e.value * 1000), status: e.value < 0.1 ? 'ok' : 'warn' });
     });
 
     observe('longtask', (e) => {
@@ -72,9 +81,12 @@ export const PerfProvider = ({ children }) => {
     });
 
     return () => observers.forEach((o) => o.disconnect());
-  }, []);
+  }, []); // runs once per mount
 
-  const clear = useCallback(() => perfLog.clear(), []);
+  const clear = useCallback(() => {
+    recordedBrowserEvents.current.clear();
+    perfLog.clear();
+  }, []);
 
   return (
     <PerfContext.Provider value={{ entries, clear }}>

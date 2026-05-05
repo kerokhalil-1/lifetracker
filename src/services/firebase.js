@@ -1,6 +1,7 @@
 // Firebase initialization — project: lifetracker-app-2026
+// Offline persistence enabled: data served from IndexedDB on repeat visits (near-instant)
 import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDOei68op60dem3XdJJmJWZWitN9DO2iWY",
@@ -12,4 +13,9 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager(),
+  }),
+});

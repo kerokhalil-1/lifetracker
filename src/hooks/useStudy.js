@@ -1,12 +1,11 @@
 // Hook for loading and managing study topics and tasks
 import { useState, useEffect, useCallback } from 'react';
 import { today } from '../utils/dateUtils.js';
-import { addTopic, listTopics, addTask, updateTask, deleteTask, listTasksByDate, listAllTasks } from '../services/studyService.js';
+import { addTopic, listTopics, addTask, updateTask, deleteTask, listTasksByDate } from '../services/studyService.js';
 import { useErrorLog } from '../context/ErrorLogContext.jsx';
 
 const useStudy = (dateStr = today()) => {
   const [todayTasks, setTodayTasks] = useState([]);
-  const [allTasks, setAllTasks] = useState([]);
   const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -16,13 +15,11 @@ const useStudy = (dateStr = today()) => {
     try {
       setLoading(true);
       setError(null);
-      const [tasks, all, topicList] = await Promise.all([
+      const [tasks, topicList] = await Promise.all([
         listTasksByDate(dateStr),
-        listAllTasks(),
         listTopics(),
       ]);
       setTodayTasks(tasks);
-      setAllTasks(all);
       setTopics(topicList);
     } catch (err) {
       setError(err.message);
@@ -74,7 +71,7 @@ const useStudy = (dateStr = today()) => {
     }
   };
 
-  return { todayTasks, allTasks, topics, loading, error, addTask: addTaskFn, toggleTask, removeTask, addTopic: addTopicFn, reload: load };
+  return { todayTasks, topics, loading, error, addTask: addTaskFn, toggleTask, removeTask, addTopic: addTopicFn, reload: load };
 };
 
 export default useStudy;
