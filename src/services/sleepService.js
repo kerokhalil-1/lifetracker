@@ -5,6 +5,12 @@ import { COLLECTIONS } from '../constants/collections.js';
 import { DEFAULTS } from '../constants/defaults.js';
 import { timed } from '../utils/perfLog.js';
 
+// Module-level cache — getSettings is called by useRoutine, useSleep, and useProgress
+// simultaneously. Cache means only the first caller hits Firestore; the rest get the
+// cached value instantly. Invalidated on save.
+let _settingsCache = null;
+let _settingsFetch = null; // in-flight promise so concurrent callers share one request
+
 export const saveSleepLog = (dateStr, logData) =>
   timed(`saveSleepLog(${dateStr})`, 'firestore', () =>
     setDoc(doc(db, COLLECTIONS.SLEEP_LOGS, dateStr), { ...logData, date: dateStr, createdAt: serverTimestamp() }, { merge: true })
@@ -30,18 +36,26 @@ export const getAllSleepLogs = () =>
     return snap.docs.map((d) => d.data());
   });
 
-export const getSettings = () =>
-  timed('getSettings', 'firestore', async () => {
+export const getSettings = () => {
+  if (_settingsCache) return Promise.resolve(_settingsCache);
+  if (_settingsFetch) return _settingsFetch; // join in-flight request
+  _settingsFetch = timed('getSettings', 'firestore', async () => {
     const snap = await getDoc(doc(db, COLLECTIONS.SETTINGS, DEFAULTS.SETTINGS_DOC_ID));
-    return snap.exists() ? snap.data() : {
+    _settingsCache = snap.exists() ? snap.data() : {
       targetSleepTime: DEFAULTS.TARGET_SLEEP_TIME,
       targetWakeTime: DEFAULTS.TARGET_WAKE_TIME,
       fixedRoutineItems: DEFAULTS.FIXED_ROUTINE_ITEMS,
       currentCourse: DEFAULTS.CURRENT_COURSE,
     };
+    _settingsFetch = null;
+    return _settingsCache;
   });
+  return _settingsFetch;
+};
 
 export const saveSettings = (settings) =>
-  timed('saveSettings', 'firestore', () =>
-    setDoc(doc(db, COLLECTIONS.SETTINGS, DEFAULTS.SETTINGS_DOC_ID), settings, { merge: true })
-  );
+  timed('saveSettings', 'firestore', async () => {
+    await setDoc(doc(db, COLLECTIONS.SETTINGS, DEFAULTS.SETTINGS_DOC_ID), settings, { merge: true });
+    _settingsCache = settings; // update cache immediately
+    _settingsFetch = null;
+  });

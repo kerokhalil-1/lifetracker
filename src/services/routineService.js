@@ -16,23 +16,11 @@ export const saveRoutineDay = (dateStr, data) =>
     setDoc(doc(db, COLLECTIONS.ROUTINE_DAYS, dateStr), { ...data, date: dateStr, createdAt: serverTimestamp() }, { merge: true })
   );
 
-export const updateRoutineItem = (dateStr, type, itemId, done) =>
-  timed(`updateRoutineItem(${type}/${itemId})`, 'firestore', async () => {
-    const ref = doc(db, COLLECTIONS.ROUTINE_DAYS, dateStr);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) return;
-    const data = snap.data();
-    const field = type === 'fixed' ? 'fixedItems' : 'flexibleItems';
-    const updated = (data[field] || []).map((item) => item.id === itemId ? { ...item, done } : item);
-    const allItems = [
-      ...(type === 'fixed' ? updated : data.fixedItems || []),
-      ...(type === 'flexible' ? updated : data.flexibleItems || []),
-    ];
-    const completionScore = allItems.length > 0
-      ? Math.round((allItems.filter((i) => i.done).length / allItems.length) * 100)
-      : 0;
-    await updateDoc(ref, { [field]: updated, completionScore });
-  });
+// Write-only: caller computes new items/score from local state — no read round-trip
+export const writeRoutineItems = (dateStr, field, items, completionScore) =>
+  timed(`writeRoutineItems(${field})`, 'firestore', () =>
+    updateDoc(doc(db, COLLECTIONS.ROUTINE_DAYS, dateStr), { [field]: items, completionScore })
+  );
 
 export const addFlexibleItem = (dateStr, item) =>
   timed(`addFlexibleItem(${dateStr})`, 'firestore', async () => {

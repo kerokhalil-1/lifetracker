@@ -71,9 +71,18 @@ export const PerfProvider = ({ children }) => {
       perfLog.record({ label: 'LCP (Largest Contentful Paint)', type: 'browser', duration: Math.round(e.startTime), status: e.startTime < 2500 ? 'ok' : e.startTime < 4000 ? 'warn' : 'error' });
     });
 
+    // Debounce layout-shift: group rapid sequential shifts into one entry
+    let shiftTimer = null;
+    let shiftAccum = 0;
     observe('layout-shift', (e) => {
       if (e.hadRecentInput) return;
-      perfLog.record({ label: `Layout shift (CLS: ${e.value.toFixed(4)})`, type: 'browser', duration: Math.round(e.value * 1000), status: e.value < 0.1 ? 'ok' : 'warn' });
+      shiftAccum += e.value;
+      clearTimeout(shiftTimer);
+      shiftTimer = setTimeout(() => {
+        const v = shiftAccum;
+        shiftAccum = 0;
+        perfLog.record({ label: `Layout shift (CLS: ${v.toFixed(4)})`, type: 'browser', duration: Math.round(v * 1000), status: v < 0.1 ? 'ok' : 'warn' });
+      }, 200);
     });
 
     observe('longtask', (e) => {
