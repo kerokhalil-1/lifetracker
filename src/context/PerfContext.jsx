@@ -71,19 +71,9 @@ export const PerfProvider = ({ children }) => {
       perfLog.record({ label: 'LCP (Largest Contentful Paint)', type: 'browser', duration: Math.round(e.startTime), status: e.startTime < 2500 ? 'ok' : e.startTime < 4000 ? 'warn' : 'error' });
     });
 
-    // Debounce layout-shift: group rapid sequential shifts into one entry
-    let shiftTimer = null;
-    let shiftAccum = 0;
-    observe('layout-shift', (e) => {
-      if (e.hadRecentInput) return;
-      shiftAccum += e.value;
-      clearTimeout(shiftTimer);
-      shiftTimer = setTimeout(() => {
-        const v = shiftAccum;
-        shiftAccum = 0;
-        perfLog.record({ label: `Layout shift (CLS: ${v.toFixed(4)})`, type: 'browser', duration: Math.round(v * 1000), status: v < 0.1 ? 'ok' : 'warn' });
-      }, 200);
-    });
+    // Layout-shift observer intentionally omitted: recording shifts triggers React
+    // re-renders which cause more shifts, creating an infinite feedback loop.
+    // CLS is measured passively by Chrome DevTools instead.
 
     observe('longtask', (e) => {
       perfLog.record({ label: `Long task blocked UI for ${Math.round(e.duration)}ms`, type: 'browser', duration: Math.round(e.duration), status: 'error' });

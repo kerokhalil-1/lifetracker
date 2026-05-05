@@ -15,4 +15,7 @@ export const DEFAULTS = {
     { id: 'r5', title: 'Healthy breakfast' },
   ],
   SETTINGS_DOC_ID: 'user',
+  DAILY_STUDY_GOAL_MINUTES: 120,
+  SESSION_DIFFICULTY: 3,
+  SESSION_FOCUS: 4,
 };

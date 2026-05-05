@@ -19,7 +19,7 @@ const ErrorLogPage  = lazy(() => import('./pages/ErrorLogPage.jsx'));
 const PerfPage      = lazy(() => import('./pages/PerfPage.jsx'));
 
 const PageFallback = () => (
-  <div className="lg:ml-56 min-h-screen flex items-center justify-center bg-slate-50">
+  <div className="lg:ml-56 min-h-screen flex items-center justify-center bg-slate-50" style={{ contain: 'layout' }}>
     <Spinner size="lg" />
   </div>
 );
