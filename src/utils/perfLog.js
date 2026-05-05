@@ -29,6 +29,23 @@ export const perfLog = {
     return full;
   },
 
+  // Replace the most recent entry whose label matches — used for LCP which fires multiple times
+  upsert(label, entry) {
+    const idx = entries.findIndex((e) => e.label === label);
+    const full = {
+      id: idx >= 0 ? entries[idx].id : `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      timestamp: new Date().toISOString(),
+      ...entry,
+    };
+    if (idx >= 0) {
+      entries = entries.map((e, i) => (i === idx ? full : e));
+    } else {
+      entries = [full, ...entries].slice(0, MAX_ENTRIES);
+    }
+    persist();
+    notify();
+  },
+
   getEntries() { return [...entries]; },
 
   subscribe(fn) {

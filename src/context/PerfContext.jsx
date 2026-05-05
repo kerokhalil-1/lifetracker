@@ -64,11 +64,13 @@ export const PerfProvider = ({ children }) => {
     });
 
     observe('largest-contentful-paint', (e) => {
-      // LCP fires multiple times; only keep the last one (largest value seen)
-      const key = 'lcp';
-      rec.delete(key); // allow overwrite with latest
-      once(key, () => {});
-      perfLog.record({ label: 'LCP (Largest Contentful Paint)', type: 'browser', duration: Math.round(e.startTime), status: e.startTime < 2500 ? 'ok' : e.startTime < 4000 ? 'warn' : 'error' });
+      // LCP fires multiple times as larger elements paint — upsert so only the final value shows
+      perfLog.upsert('LCP (Largest Contentful Paint)', {
+        label: 'LCP (Largest Contentful Paint)',
+        type: 'browser',
+        duration: Math.round(e.startTime),
+        status: e.startTime < 2500 ? 'ok' : e.startTime < 4000 ? 'warn' : 'error',
+      });
     });
 
     // Layout-shift observer intentionally omitted: recording shifts triggers React
