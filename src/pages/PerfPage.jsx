@@ -25,15 +25,20 @@ const speedColor = (ms, type) => {
   return 'text-red-600';
 };
 
-const speedBg = (ms, type) => {
+const speedBg = (ms, type, status) => {
   if (type === 'interaction' || ms === 0) return 'bg-white';
+  if (status === 'error') return 'bg-red-50';
+  if (status === 'warn')  return 'bg-amber-50';
   if (ms < 300)  return 'bg-green-50';
   if (ms < 1000) return 'bg-amber-50';
   return 'bg-red-50';
 };
 
-const speedLabel = (ms, type) => {
+const speedLabel = (ms, type, status) => {
   if (type === 'interaction' || ms === 0) return null;
+  // status:'warn' = LCP 2500-4000ms; status:'error' = LCP >4000ms or a real error
+  if (status === 'warn')  return { text: 'Warn',   color: 'amber' };
+  if (status === 'error' && ms === 0) return { text: 'Error', color: 'red' }; // error with no duration
   if (ms < 300)  return { text: 'Fast',   color: 'green' };
   if (ms < 1000) return { text: 'OK',     color: 'amber' };
   return          { text: 'Slow',   color: 'red'   };
@@ -47,10 +52,10 @@ const avgOf = (arr) => arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / 
 
 const EntryRow = ({ entry }) => {
   const meta = TYPE_META[entry.type] || TYPE_META.browser;
-  const spd = speedLabel(entry.duration, entry.type);
+  const spd = speedLabel(entry.duration, entry.type, entry.status);
 
   return (
-    <div className={`flex items-center gap-3 px-4 py-2.5 border-b border-slate-100 last:border-0 ${speedBg(entry.duration, entry.type)}`}>
+    <div className={`flex items-center gap-3 px-4 py-2.5 border-b border-slate-100 last:border-0 ${speedBg(entry.duration, entry.type, entry.status)}`}>
       <meta.Icon size={14} className="text-slate-400 flex-shrink-0" />
 
       <span className="text-xs text-slate-400 w-24 flex-shrink-0 tabular-nums">
@@ -130,7 +135,7 @@ const PerfPage = () => {
 
   const copyAll = () => {
     const text = entries.map((e) =>
-      `[${formatTs(e.timestamp)}] [${e.type.toUpperCase()}] ${e.label} — ${e.duration > 0 ? e.duration + 'ms' : 'instant'}${e.status === 'error' ? ' ❌ ' + e.error : ''}`
+      `[${formatTs(e.timestamp)}] [${e.type.toUpperCase()}] ${e.label} — ${e.duration > 0 ? e.duration + 'ms' : 'instant'}${e.status === 'error' ? ' ❌' + (e.error ? ' ' + e.error : '') : e.status === 'warn' ? ' ⚠️' : ''}`
     ).join('\n');
     copyToClipboard(text || 'No entries.').then(() => {
       setCopied(true);

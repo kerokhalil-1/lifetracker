@@ -27,6 +27,7 @@ const MobileNav = () => {
           key={path}
           to={path}
           end={path === ROUTES.DASHBOARD}
+          data-perf-label={`Nav: ${label}`}
           className={({ isActive }) =>
             `flex-1 flex flex-col items-center py-2.5 gap-0.5 text-xs font-medium transition-colors ${
               isActive ? 'text-sky-600' : 'text-slate-400 hover:text-slate-600'
@@ -46,6 +47,7 @@ const MobileNav = () => {
       <div className="hidden sm:contents">
         <NavLink
           to={ROUTES.PERF}
+          data-perf-label="Nav: Speed Monitor"
           className={({ isActive }) =>
             `flex-1 flex flex-col items-center py-2.5 gap-0.5 text-xs font-medium transition-colors relative ${
               isActive ? 'text-sky-600' : 'text-slate-400 hover:text-slate-600'
@@ -69,6 +71,7 @@ const MobileNav = () => {
 
         <NavLink
           to={ROUTES.ERRORS}
+          data-perf-label="Nav: Error Log"
           className={({ isActive }) =>
             `flex-1 flex flex-col items-center py-2.5 gap-0.5 text-xs font-medium transition-colors relative ${
               isActive ? 'text-red-600' : 'text-slate-400 hover:text-slate-600'

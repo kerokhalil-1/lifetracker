@@ -32,6 +32,7 @@ const Sidebar = () => {
             key={path}
             to={path}
             end={path === ROUTES.DASHBOARD}
+            data-perf-label={`Nav: ${label}`}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 isActive
@@ -53,6 +54,7 @@ const Sidebar = () => {
       {/* Speed monitor link */}
       <NavLink
         to={ROUTES.PERF}
+        data-perf-label="Nav: Speed Monitor"
         className={({ isActive }) =>
           `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors mt-1 ${
             isActive ? 'bg-sky-50 text-sky-700' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-700'
@@ -75,6 +77,7 @@ const Sidebar = () => {
       {/* Error log link always visible at the bottom */}
       <NavLink
         to={ROUTES.ERRORS}
+        data-perf-label="Nav: Error Log"
         className={({ isActive }) =>
           `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors mt-2 ${
             isActive ? 'bg-red-50 text-red-700' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-700'
