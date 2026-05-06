@@ -1,11 +1,12 @@
 // Core hook — owns the session state machine and the live timer
 import { useState, useEffect, useRef, useCallback } from 'react';
+// Note: useRef is used for inFlightRef (pause/resume guard) and preFinishStatusRef
 import { today } from '../utils/dateUtils.js';
 import { computeElapsedWork, computeElapsedBreak } from '../utils/sessionUtils.js';
 import {
   createSession, updateSession, getActiveSession, nowTimestamp, invalidateSessionsCache,
 } from '../services/sessionService.js';
-import { updateCourse } from '../services/courseService.js';
+import { incrementCourseStats } from '../services/courseService.js';
 import { useErrorLog } from '../context/ErrorLogContext.jsx';
 
 // Valid statuses: 'idle' | 'loading' | 'running' | 'paused' | 'finishing' | 'finished'
@@ -16,6 +17,11 @@ const useSession = () => {
   const [elapsedWork, setElapsedWork] = useState(0);
   const [elapsedBreak, setElapsedBreak] = useState(0);
   const { addError } = useErrorLog();
+
+  // Re-entrancy guard: prevents rapid double-tap on pause/resume (bug #23)
+  const inFlightRef = useRef(false);
+  // Remembers status before 'finishing' so cancelFinish can restore it (bug #7)
+  const preFinishStatusRef = useRef(null);
 
   // Restore any active session that was left open before a page refresh
   useEffect(() => {
@@ -84,6 +90,8 @@ const useSession = () => {
   // Pause the running session — saves accumulated work time to Firestore
   const pauseSession = useCallback(async () => {
     if (!sessionId || status !== 'running') return;
+    if (inFlightRef.current) return; // guard: rapid double-tap (bug #23)
+    inFlightRef.current = true;
     try {
       const pausedAt = nowTimestamp();
       const updates = {
@@ -98,12 +106,16 @@ const useSession = () => {
       setStatus('paused');
     } catch (err) {
       addError('useSession.pauseSession', err);
+    } finally {
+      inFlightRef.current = false;
     }
   }, [sessionId, status, elapsedWork, session, addError]);
 
   // Resume a paused session — records the break interval in Firestore
   const resumeSession = useCallback(async () => {
     if (!sessionId || status !== 'paused') return;
+    if (inFlightRef.current) return; // guard: rapid double-tap (bug #23)
+    inFlightRef.current = true;
     try {
       const resumedAt = nowTimestamp();
       const breakEntry = {
@@ -124,13 +136,22 @@ const useSession = () => {
       setStatus('running');
     } catch (err) {
       addError('useSession.resumeSession', err);
+    } finally {
+      inFlightRef.current = false;
     }
   }, [sessionId, status, elapsedBreak, session, addError]);
 
   // Switch to the finish form — stops the timer, waits for form submission
   const requestFinish = useCallback(() => {
     if (status !== 'running' && status !== 'paused') return;
+    preFinishStatusRef.current = status; // remember so cancelFinish can restore (bug #7)
     setStatus('finishing');
+  }, [status]);
+
+  // Cancel the finish form and return to whichever state we came from (bug #7)
+  const cancelFinish = useCallback(() => {
+    if (status !== 'finishing') return;
+    setStatus(preFinishStatusRef.current || 'running');
   }, [status]);
 
   // Save the completed session with all form data to Firestore
@@ -148,12 +169,10 @@ const useSession = () => {
       await updateSession(sessionId, updates);
       invalidateSessionsCache(); // history tab should reload after finish
 
-      // Increment the parent course's cumulative stats
+      // Atomically increment the parent course's cumulative stats (bug #3 fix)
       if (session?.courseId) {
-        await updateCourse(session.courseId, {
-          totalStudySeconds: (session.totalStudySeconds || 0) + finalWorkSeconds,
-          sessionCount: (session.sessionCount || 0) + 1,
-        }).catch(() => {}); // non-critical — don't block session save
+        incrementCourseStats(session.courseId, finalWorkSeconds)
+          .catch(() => {}); // non-critical — don't block session save
       }
 
       setStatus('finished');
@@ -196,6 +215,7 @@ const useSession = () => {
     pauseSession,
     resumeSession,
     requestFinish,
+    cancelFinish,
     submitFinish,
     cancelSession,
   };

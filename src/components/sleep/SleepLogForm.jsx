@@ -1,5 +1,5 @@
 // Form for logging a night's sleep data
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import Input from '../ui/Input.jsx';
 import Rating from '../ui/Rating.jsx';
@@ -8,14 +8,22 @@ import { timeDiff, didHitTarget } from '../../utils/timeUtils.js';
 import { DEFAULTS } from '../../constants/defaults.js';
 import en from '../../locales/en.js';
 
+// Build initial form state from props — extracted so we can call it in useEffect too
+const buildInitial = (defaultLog, settings) => ({
+  sleepTime: defaultLog?.sleepTime ?? settings?.targetSleepTime ?? DEFAULTS.TARGET_SLEEP_TIME,
+  wakeTime: defaultLog?.wakeTime ?? settings?.targetWakeTime ?? DEFAULTS.TARGET_WAKE_TIME,
+  quality: defaultLog?.quality ?? DEFAULTS.QUALITY,           // bug #12: ?? not || so 0 is valid
+  morningEnergy: defaultLog?.morningEnergy ?? DEFAULTS.MORNING_ENERGY,
+});
+
 const SleepLogForm = ({ onSubmit, settings, defaultLog }) => {
-  const [form, setForm] = useState({
-    sleepTime: defaultLog?.sleepTime || settings?.targetSleepTime || DEFAULTS.TARGET_SLEEP_TIME,
-    wakeTime: defaultLog?.wakeTime || settings?.targetWakeTime || DEFAULTS.TARGET_WAKE_TIME,
-    quality: defaultLog?.quality || DEFAULTS.QUALITY,
-    morningEnergy: defaultLog?.morningEnergy || DEFAULTS.MORNING_ENERGY,
-  });
+  const [form, setForm] = useState(() => buildInitial(defaultLog, settings));
   const [submitting, setSubmitting] = useState(false);
+
+  // Bug #12 fix: re-sync form when defaultLog or settings change (e.g. after Firestore reload)
+  useEffect(() => {
+    setForm(buildInitial(defaultLog, settings));
+  }, [defaultLog, settings]);
 
   const set = (field) => (e) => setForm((p) => ({ ...p, [field]: e.target.value }));
 

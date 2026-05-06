@@ -1,5 +1,6 @@
 // Study page — Session tracker, daily tasks, topic log, and session history
 import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { Plus, CheckCircle } from 'lucide-react';
 import PageWrapper from '../components/layout/PageWrapper.jsx';
 import Card from '../components/ui/Card.jsx';
@@ -8,7 +9,6 @@ import Spinner from '../components/ui/Spinner.jsx';
 import Button from '../components/ui/Button.jsx';
 import Input from '../components/ui/Input.jsx';
 import Modal from '../components/ui/Modal.jsx';
-import Badge from '../components/ui/Badge.jsx';
 import StudyTaskItem from '../components/study/StudyTaskItem.jsx';
 import TopicCard from '../components/study/TopicCard.jsx';
 import TopicForm from '../components/study/TopicForm.jsx';
@@ -37,7 +37,7 @@ const buildTabs = (sessionActive) => [
 // ─── Session tab ─────────────────────────────────────────────────────────────
 
 const SessionTab = ({ session: sessionHook, courses, history }) => {
-  const { status, session, elapsedWork, elapsedBreak, startSession, pauseSession, resumeSession, requestFinish, submitFinish, cancelSession } = sessionHook;
+  const { status, session, elapsedWork, elapsedBreak, startSession, pauseSession, resumeSession, requestFinish, cancelFinish, submitFinish, cancelSession } = sessionHook;
   const [showPicker, setShowPicker] = useState(false);
 
   // Auto-open the picker when the user clicks Study Now
@@ -77,7 +77,7 @@ const SessionTab = ({ session: sessionHook, courses, history }) => {
       <Card>
         <FinishSessionForm
           onSubmit={submitFinish}
-          onBack={() => sessionHook.resumeSession()} // return to running state
+          onBack={cancelFinish} // return to prior state (running or paused) — bug #7 fix
         />
       </Card>
     );
@@ -258,8 +258,6 @@ const HistoryTab = ({ history }) => {
 };
 
 // ─── PropTypes for inner tab components ──────────────────────────────────────
-
-import PropTypes from 'prop-types';
 
 SessionTab.propTypes = {
   session: PropTypes.object.isRequired,

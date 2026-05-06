@@ -28,9 +28,14 @@ export const createSession = (data) =>
 // Partially update an existing session document
 export const updateSession = (id, updates) =>
   timed(`updateSession(${id})`, 'firestore', () => {
-    // Status transitions that resolve the active session invalidate the cache
-    if (updates.status && updates.status !== 'running' && updates.status !== 'paused') {
+    const terminates = updates.status && updates.status !== 'running' && updates.status !== 'paused';
+    if (terminates) {
+      // Session ended — fully clear the cache so next getActiveSession does a fresh read
       invalidateActiveSession();
+    } else if (_activeCache !== undefined && _activeCache?.id === id) {
+      // Session still active (pause/resume) — merge updates into the cached snapshot
+      // so the next mount gets the latest pausedAt/lastResumedAt/pauseCount etc. (bug #5 fix)
+      _activeCache = { ..._activeCache, ...updates };
     }
     return updateDoc(doc(db, COLLECTIONS.STUDY_SESSIONS, id), {
       ...updates,
@@ -53,9 +58,8 @@ export const getActiveSession = () => {
       ['running', 'paused'].includes(d.data().status)
     );
     _activeCache = active ? { id: active.id, ...active.data() } : null;
-    _activeFetch = null;
     return _activeCache;
-  });
+  }).finally(() => { _activeFetch = null; }); // bug #6: clear on error too, so next call retries
   return _activeFetch;
 };
 
@@ -80,9 +84,8 @@ export const listRecentSessions = (count = 30) => {
     const snap = await getDocs(q);
     _sessionsCache = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     _sessionsCacheTs = Date.now();
-    _sessionsFetch = null;
     return _sessionsCache;
-  });
+  }).finally(() => { _sessionsFetch = null; }); // bug #6: clear on error too, so next call retries
   return _sessionsFetch;
 };
 

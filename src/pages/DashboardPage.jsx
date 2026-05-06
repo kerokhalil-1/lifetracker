@@ -11,17 +11,36 @@ import StatCard from '../components/progress/StatCard.jsx';
 import useRoutine from '../hooks/useRoutine.js';
 import useStudy from '../hooks/useStudy.js';
 import useSleep from '../hooks/useSleep.js';
-import { today, formatFull } from '../utils/dateUtils.js';
+import useSessionHistory from '../hooks/useSessionHistory.js';
+import { today, formatFull, getWeekDays } from '../utils/dateUtils.js';
 import { minsToHrs } from '../utils/timeUtils.js';
 import en from '../locales/en.js';
+
+// Compute consecutive-day study streak from finished sessions.
+// Walk backward from today; stop as soon as a day has no finished session.
+const computeStreak = (sessions) => {
+  const finishedDates = new Set(
+    sessions.filter((s) => s.status === 'finished').map((s) => s.date)
+  );
+  let streak = 0;
+  const d = new Date();
+  while (true) {
+    const dateStr = d.toISOString().split('T')[0]; // local-date approximation (calendar dates are server-side anyway)
+    if (!finishedDates.has(dateStr)) break;
+    streak++;
+    d.setDate(d.getDate() - 1);
+  }
+  return streak;
+};
 
 const DashboardPage = () => {
   const { routineDay, loading: routineLoading, toggleItem } = useRoutine(today());
   const { todayTasks, loading: studyLoading, toggleTask, addTask } = useStudy(today());
-  const { todayLog, last7, loading: sleepLoading } = useSleep();
+  const { todayLog, loading: sleepLoading } = useSleep();
+  const { sessions, loading: sessionLoading } = useSessionHistory();
   const [newTask, setNewTask] = useState('');
 
-  const loading = routineLoading || studyLoading || sleepLoading;
+  const loading = routineLoading || studyLoading || sleepLoading || sessionLoading;
 
   const handleAddTask = async () => {
     if (!newTask.trim()) return;
@@ -29,7 +48,13 @@ const DashboardPage = () => {
     setNewTask('');
   };
 
-  const studyMinsThisWeek = last7.reduce((acc) => acc, 0);
+  // Sum work seconds for finished sessions whose date falls in the current week
+  const weekDays = new Set(getWeekDays());
+  const studyMinsThisWeek = sessions
+    .filter((s) => s.status === 'finished' && weekDays.has(s.date))
+    .reduce((sum, s) => sum + Math.round((s.totalWorkSeconds || 0) / 60), 0);
+
+  const streak = computeStreak(sessions);
   const routineScore = routineDay?.completionScore ?? 0;
   const allItems = [...(routineDay?.fixedItems || []), ...(routineDay?.flexibleItems || [])];
 
@@ -48,7 +73,7 @@ const DashboardPage = () => {
           <div className="flex gap-3 flex-wrap">
             <StatCard label={en.dashboard.routinePct} value={`${routineScore}%`} icon={CheckSquare} color="sky" />
             <StatCard label={en.dashboard.studyHours} value={minsToHrs(studyMinsThisWeek)} icon={BookOpen} color="green" />
-            <StatCard label={en.dashboard.streak} value={0} sub={en.common.days} icon={Flame} color="amber" />
+            <StatCard label={en.dashboard.streak} value={streak} sub={en.common.days} icon={Flame} color="amber" />
           </div>
 
           {/* Morning Routine quick-check */}

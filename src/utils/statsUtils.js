@@ -1,5 +1,5 @@
 // Statistics calculation helpers for streaks, completion, and averages
-import { parseISO, differenceInCalendarDays } from 'date-fns';
+import { parseISO, differenceInCalendarDays, format } from 'date-fns';
 import { today } from './dateUtils.js';
 
 // Calculate the current consecutive streak of days that had at least one task done
@@ -13,7 +13,7 @@ export const calcStreak = (dayRecords) => {
       streak++;
       const d = parseISO(expected);
       d.setDate(d.getDate() - 1);
-      expected = d.toISOString().split('T')[0];
+      expected = format(d, 'yyyy-MM-dd'); // bug #9 fix: use date-fns format, not toISOString (UTC issue)
     } else {
       break;
     }
@@ -37,6 +37,7 @@ export const calcAverage = (nums) => {
 export const countSleepTargetHits = (logs) => logs.filter((l) => l.hitTarget).length;
 
 // Calculate the study streak (consecutive days with at least 1 done task)
+// Bug #9 fix: any failed expectation breaks the streak immediately — no silent fall-through
 export const calcStudyStreak = (tasksByDate) => {
   const dates = Object.keys(tasksByDate).sort((a, b) => b.localeCompare(a));
   if (!dates.length) return 0;
@@ -44,14 +45,12 @@ export const calcStudyStreak = (tasksByDate) => {
   let expected = today();
   for (const date of dates) {
     const diff = differenceInCalendarDays(parseISO(expected), parseISO(date));
-    if (diff === 0 && tasksByDate[date].some((t) => t.done)) {
-      streak++;
-      const d = parseISO(expected);
-      d.setDate(d.getDate() - 1);
-      expected = d.toISOString().split('T')[0];
-    } else if (diff > 1) {
-      break;
-    }
+    if (diff !== 0) break;                              // skipped a day → stop
+    if (!tasksByDate[date].some((t) => t.done)) break; // no done task → stop
+    streak++;
+    const d = parseISO(expected);
+    d.setDate(d.getDate() - 1);
+    expected = format(d, 'yyyy-MM-dd'); // use date-fns format, not toISOString (UTC issue)
   }
   return streak;
 };

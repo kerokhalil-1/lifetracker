@@ -1,8 +1,51 @@
 rules_version = '2';
+
+// TODO(auth): When Firebase Authentication is added, replace the per-collection rules below
+// with per-user rules like:
+//   allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+// Until then, reads and writes are open (single-user personal app running without auth).
+
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Sleep logs — daily entries
+    match /sleepLogs/{doc} {
+      allow read, write: if true; // TODO(auth): lock to request.auth.uid
+    }
+
+    // App settings (sleep targets, routine template, current course)
+    match /settings/{doc} {
+      allow read, write: if true; // TODO(auth): lock to request.auth.uid
+    }
+
+    // Courses
+    match /courses/{doc} {
+      allow read, write: if true; // TODO(auth): lock to request.auth.uid
+    }
+
+    // Study sessions
+    match /studySessions/{doc} {
+      allow read, write: if true; // TODO(auth): lock to request.auth.uid
+    }
+
+    // Study tasks
+    match /studyTasks/{doc} {
+      allow read, write: if true; // TODO(auth): lock to request.auth.uid
+    }
+
+    // Study topics
+    match /studyTopics/{doc} {
+      allow read, write: if true; // TODO(auth): lock to request.auth.uid
+    }
+
+    // Routine days (daily check-in data)
+    match /routineDays/{doc} {
+      allow read, write: if true; // TODO(auth): lock to request.auth.uid
+    }
+
+    // Deny any collection not explicitly listed above
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }

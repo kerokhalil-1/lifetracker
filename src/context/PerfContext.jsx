@@ -21,18 +21,19 @@ export const PerfProvider = ({ children }) => {
     perfLog.record({ label: `Navigate → ${location.pathname}`, type: 'navigation', duration: 0, status: 'ok' });
   }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Track every meaningful click — capture the target label
+  // Track every meaningful click — bug #22: prefer data-perf-label to avoid leaking personal text
   useEffect(() => {
     const handler = (e) => {
       const el = e.target.closest('button, a, [role="button"], label');
       if (!el) return;
+      // Priority: data-perf-label > aria-label > title > tagName (never raw text content)
       const label =
+        el.getAttribute('data-perf-label') ||
         el.getAttribute('aria-label') ||
         el.getAttribute('title') ||
-        el.textContent?.trim().slice(0, 60) ||
-        el.tagName;
+        el.tagName; // fallback: just "BUTTON", "A", etc. — no personal content
       if (!label || label.length < 1) return;
-      perfLog.record({ label: `Click: "${label}"`, type: 'interaction', duration: 0, status: 'ok' });
+      perfLog.record({ label: `Click: "${label.slice(0, 30)}"`, type: 'interaction', duration: 0, status: 'ok' });
     };
     document.addEventListener('click', handler, { capture: true });
     return () => document.removeEventListener('click', handler, { capture: true });

@@ -9,8 +9,7 @@ import en from '../../locales/en.js';
 const GoalBanner = ({ todayWorkSeconds, activeSessionSeconds = 0 }) => {
   const goal = DEFAULTS.DAILY_STUDY_GOAL_MINUTES;
   const doneMinutes = secondsToMinutes(todayWorkSeconds + activeSessionSeconds);
-  const pct = Math.min(100, Math.round((doneMinutes / goal) * 100));
-  const reached = doneMinutes >= goal;
+  const reached = doneMinutes >= goal; // bug #18: removed unused pct variable (ProgressBar computes it internally)
 
   return (
     <div className="bg-white border border-slate-200 rounded-xl px-4 py-3 flex flex-col gap-2 shadow-sm">

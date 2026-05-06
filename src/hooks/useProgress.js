@@ -1,8 +1,10 @@
 // Hook for aggregating progress data across routine, study, and sleep
 import { useState, useEffect, useCallback } from 'react';
+import { getWeekOfMonth } from 'date-fns';
+import { parseISO } from 'date-fns';
 import { getRecentRoutineDays } from '../services/routineService.js';
 import { listTopics, listAllTasks } from '../services/studyService.js';
-import { getAllSleepLogs, getSettings } from '../services/sleepService.js';
+import { getAllSleepLogs } from '../services/sleepService.js';
 import { getWeekDays, getMonthDays, today } from '../utils/dateUtils.js';
 import { calcAverage, countSleepTargetHits, groupBy } from '../utils/statsUtils.js';
 import { useErrorLog } from '../context/ErrorLogContext.jsx';
@@ -18,12 +20,12 @@ const useProgress = () => {
       setLoading(true);
       setError(null);
 
+      // Bug #10 fix: removed discarded getSettings() from Promise.all (it was fetched but never used)
       const [routineDays, topics, tasks, sleepLogs] = await Promise.all([
         getRecentRoutineDays(60),
         listTopics(),
         listAllTasks(),
         getAllSleepLogs(),
-        getSettings(),
       ]);
 
       const todayStr = today();
@@ -55,11 +57,8 @@ const useProgress = () => {
       const monthSleep = sleepLogs.filter((l) => monthDays.includes(l.date));
       const monthStudyMins = monthTopics.reduce((acc, t) => acc + (t.timeSpentMinutes || 0), 0);
 
-      const weekNum = (dateStr) => {
-        const d = new Date(dateStr);
-        const start = new Date(d.getFullYear(), d.getMonth(), 1);
-        return Math.ceil((d.getDate() + start.getDay()) / 7);
-      };
+      // Bug #11 fix: use date-fns getWeekOfMonth with Mon start + parseISO (no UTC date shift)
+      const weekNum = (dateStr) => getWeekOfMonth(parseISO(dateStr), { weekStartsOn: 1 });
       const byWeek = groupBy(monthRoutine, (d) => weekNum(d.date));
       const weeklyAvgs = Object.entries(byWeek).map(([w, days]) => ({
         week: `Week ${w}`,

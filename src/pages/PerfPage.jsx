@@ -1,5 +1,6 @@
 // App speed monitor — shows every click, navigation, Firestore call, and browser metric
 import { useState } from 'react';
+import PropTypes from 'prop-types';
 import { Copy, Check, Trash2, Zap, Database, Navigation, MousePointer, Monitor } from 'lucide-react';
 import PageWrapper from '../components/layout/PageWrapper.jsx';
 import Card from '../components/ui/Card.jsx';
@@ -74,6 +75,18 @@ const EntryRow = ({ entry }) => {
   );
 };
 
+EntryRow.propTypes = {
+  entry: PropTypes.shape({
+    id: PropTypes.string,
+    timestamp: PropTypes.string.isRequired,
+    type: PropTypes.oneOf(['firestore', 'navigation', 'interaction', 'browser']).isRequired,
+    label: PropTypes.string.isRequired,
+    duration: PropTypes.number,
+    status: PropTypes.string,
+    error: PropTypes.string,
+  }).isRequired,
+};
+
 // ─── main page ───────────────────────────────────────────────────────────────
 
 const PerfPage = () => {
@@ -90,11 +103,36 @@ const PerfPage = () => {
   const errorCount = entries.filter((e) => e.status === 'error').length;
   const slowCount = firestoreEntries.filter((e) => e.duration >= 1000).length;
 
+  // Bug #21: robust clipboard helper with textarea fallback for insecure contexts
+  const copyToClipboard = (text) => {
+    if (navigator.clipboard) {
+      return navigator.clipboard.writeText(text).catch(() => {
+        const el = document.createElement('textarea');
+        el.value = text;
+        el.style.position = 'fixed';
+        el.style.opacity = '0';
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+      });
+    }
+    const el = document.createElement('textarea');
+    el.value = text;
+    el.style.position = 'fixed';
+    el.style.opacity = '0';
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    return Promise.resolve();
+  };
+
   const copyAll = () => {
     const text = entries.map((e) =>
       `[${formatTs(e.timestamp)}] [${e.type.toUpperCase()}] ${e.label} — ${e.duration > 0 ? e.duration + 'ms' : 'instant'}${e.status === 'error' ? ' ❌ ' + e.error : ''}`
     ).join('\n');
-    navigator.clipboard.writeText(text || 'No entries.').then(() => {
+    copyToClipboard(text || 'No entries.').then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     });

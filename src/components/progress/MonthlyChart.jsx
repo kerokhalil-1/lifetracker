@@ -1,7 +1,6 @@
 // GitHub-style heatmap grid for monthly routine consistency
 import PropTypes from 'prop-types';
-import { formatDayAbbr } from '../../utils/dateUtils.js';
-import { formatDisplay } from '../../utils/dateUtils.js';
+import { formatDisplay } from '../../utils/dateUtils.js'; // bug #15: merged duplicate imports, removed unused formatDayAbbr
 
 const MonthlyChart = ({ data }) => (
   <div className="flex flex-wrap gap-1">

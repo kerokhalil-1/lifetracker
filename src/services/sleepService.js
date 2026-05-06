@@ -47,9 +47,8 @@ export const getSettings = () => {
       fixedRoutineItems: DEFAULTS.FIXED_ROUTINE_ITEMS,
       currentCourse: DEFAULTS.CURRENT_COURSE,
     };
-    _settingsFetch = null;
     return _settingsCache;
-  });
+  }).finally(() => { _settingsFetch = null; }); // bug #6: clear on error too, so next call retries
   return _settingsFetch;
 };
 

@@ -1,5 +1,6 @@
 // Error log viewer — shows all captured errors with copy-to-clipboard for sharing
 import { useState } from 'react';
+import PropTypes from 'prop-types';
 import { Trash2, Copy, Check, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import PageWrapper from '../components/layout/PageWrapper.jsx';
 import Card from '../components/ui/Card.jsx';
@@ -20,6 +21,32 @@ const formatTs = (iso) => {
   return d.toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'medium' });
 };
 
+// Bug #21: clipboard fallback via textarea for insecure contexts / older mobile browsers
+const copyToClipboard = (text) => {
+  if (navigator.clipboard) {
+    return navigator.clipboard.writeText(text).catch(() => {
+      const el = document.createElement('textarea');
+      el.value = text;
+      el.style.position = 'fixed';
+      el.style.opacity = '0';
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+    });
+  }
+  // Fallback for browsers without clipboard API
+  const el = document.createElement('textarea');
+  el.value = text;
+  el.style.position = 'fixed';
+  el.style.opacity = '0';
+  document.body.appendChild(el);
+  el.select();
+  document.execCommand('copy');
+  document.body.removeChild(el);
+  return Promise.resolve();
+};
+
 const ErrorEntry = ({ entry }) => {
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -34,7 +61,7 @@ const ErrorEntry = ({ entry }) => {
       entry.filename ? `\nFile: ${entry.filename}:${entry.lineno}:${entry.colno}` : '',
     ].filter(Boolean).join('\n');
 
-    navigator.clipboard.writeText(text).then(() => {
+    copyToClipboard(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
@@ -95,6 +122,21 @@ const ErrorEntry = ({ entry }) => {
   );
 };
 
+// Bug #16: add PropTypes for ErrorEntry
+ErrorEntry.propTypes = {
+  entry: PropTypes.shape({
+    id: PropTypes.string,
+    timestamp: PropTypes.string.isRequired,
+    source: PropTypes.string.isRequired,
+    message: PropTypes.string.isRequired,
+    stack: PropTypes.string,
+    componentStack: PropTypes.string,
+    filename: PropTypes.string,
+    lineno: PropTypes.number,
+    colno: PropTypes.number,
+  }).isRequired,
+};
+
 const ErrorLogPage = () => {
   const { errors, clearErrors } = useErrorLog();
   const [allCopied, setAllCopied] = useState(false);
@@ -109,7 +151,8 @@ const ErrorLogPage = () => {
       e.componentStack ? `Component Stack:\n${e.componentStack.trim()}` : '',
     ].filter(Boolean).join('\n')).join('\n\n');
 
-    navigator.clipboard.writeText(text || 'No errors logged.').then(() => {
+    // Bug #21: use robust clipboard helper with fallback
+    copyToClipboard(text || 'No errors logged.').then(() => {
       setAllCopied(true);
       setTimeout(() => setAllCopied(false), 2500);
     });

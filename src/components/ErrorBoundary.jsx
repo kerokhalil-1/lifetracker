@@ -1,12 +1,26 @@
 // Class-based React Error Boundary — catches render-phase crashes
 import { Component } from 'react';
 import PropTypes from 'prop-types';
+import { Link } from 'react-router-dom';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { ROUTES } from '../constants/routes.js';
+
+// Detect stale-chunk errors that happen after a new deployment.
+// When Vite builds, chunk filenames contain a content hash. If the user has an old
+// index.html cached and navigates to a lazy-loaded route, the old chunk URL no longer
+// exists on the server → "Failed to fetch dynamically imported module".
+// Solution: reload once automatically. A sessionStorage flag prevents reload loops.
+const isChunkLoadError = (err) =>
+  err?.message?.includes('Failed to fetch dynamically imported module') ||
+  err?.message?.includes('Importing a module script failed') ||
+  err?.name === 'ChunkLoadError';
+
+const RELOAD_FLAG = 'eb_chunk_reloaded';
 
 class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
-    this.state = { error: null, info: null };
+    this.state = { error: null, info: null, autoReloading: false };
   }
 
   static getDerivedStateFromError(error) {
@@ -15,15 +29,48 @@ class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     this.setState({ info });
-    // Forward to the global error log via the injected callback
+
+    // Auto-reload once for stale-chunk errors — user shouldn't see the crash UI at all
+    if (isChunkLoadError(error)) {
+      const alreadyTriedReload = sessionStorage.getItem(RELOAD_FLAG);
+      if (!alreadyTriedReload) {
+        sessionStorage.setItem(RELOAD_FLAG, '1');
+        this.setState({ autoReloading: true });
+        window.location.reload();
+        return; // don't log to error log — this is infrastructure noise, not a code bug
+      }
+      // Second time means reloading didn't help — clear the flag and show the error UI
+      sessionStorage.removeItem(RELOAD_FLAG);
+    }
+
+    // Forward real errors to the global error log
     if (typeof this.props.onError === 'function') {
       this.props.onError(error, info);
     }
   }
 
+  handleTryAgain = () => {
+    sessionStorage.removeItem(RELOAD_FLAG);
+    this.setState({ error: null, info: null, autoReloading: false });
+    window.location.href = '/';
+  };
+
   render() {
-    const { error, info } = this.state;
+    const { error, info, autoReloading } = this.state;
     if (!error) return this.props.children;
+
+    // Show a brief "updating…" message while the auto-reload triggers
+    if (autoReloading || isChunkLoadError(error)) {
+      return (
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm max-w-sm w-full p-6 text-center">
+            <RefreshCw size={24} className="text-sky-500 mx-auto mb-3 animate-spin" />
+            <p className="text-sm font-medium text-slate-700">New version available — reloading…</p>
+            <p className="text-xs text-slate-400 mt-1">This only takes a second.</p>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
@@ -42,17 +89,17 @@ class ErrorBoundary extends Component {
           )}
           <div className="flex gap-2">
             <button
-              onClick={() => this.setState({ error: null, info: null })}
+              onClick={this.handleTryAgain}
               className="flex items-center gap-2 px-4 py-2 bg-sky-600 text-white rounded-lg text-sm font-medium hover:bg-sky-700 transition-colors"
             >
               <RefreshCw size={14} /> Try again
             </button>
-            <a
-              href="/errors"
+            <Link
+              to={ROUTES.ERRORS}
               className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-200 transition-colors"
             >
               View error log
-            </a>
+            </Link>
           </div>
         </div>
       </div>
