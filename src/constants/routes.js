@@ -5,6 +5,7 @@ export const ROUTES = {
   STUDY: '/study',
   SLEEP: '/sleep',
   PROGRESS: '/progress',
+  ZOHO_ROADMAP: '/zoho-roadmap',
   ERRORS: '/errors',
   PERF: '/perf',
 };

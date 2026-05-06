@@ -1,17 +1,18 @@
 // Desktop sidebar navigation with page links and active state
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Sunrise, BookOpen, Moon, TrendingUp, Bug, Zap } from 'lucide-react';
+import { LayoutDashboard, Sunrise, BookOpen, Moon, TrendingUp, Bug, Zap, GraduationCap } from 'lucide-react';
 import { ROUTES } from '../../constants/routes.js';
 import { useErrorLog } from '../../context/ErrorLogContext.jsx';
 import { usePerf } from '../../context/PerfContext.jsx';
 import en from '../../locales/en.js';
 
 const mainNav = [
-  { path: ROUTES.DASHBOARD, label: en.nav.dashboard, Icon: LayoutDashboard },
-  { path: ROUTES.ROUTINE, label: en.nav.routine, Icon: Sunrise },
-  { path: ROUTES.STUDY, label: en.nav.study, Icon: BookOpen },
-  { path: ROUTES.SLEEP, label: en.nav.sleep, Icon: Moon },
-  { path: ROUTES.PROGRESS, label: en.nav.progress, Icon: TrendingUp },
+  { path: ROUTES.DASHBOARD,    label: en.nav.dashboard, Icon: LayoutDashboard },
+  { path: ROUTES.ROUTINE,      label: en.nav.routine,   Icon: Sunrise },
+  { path: ROUTES.STUDY,        label: en.nav.study,     Icon: BookOpen },
+  { path: ROUTES.SLEEP,        label: en.nav.sleep,     Icon: Moon },
+  { path: ROUTES.PROGRESS,     label: en.nav.progress,  Icon: TrendingUp },
+  { path: ROUTES.ZOHO_ROADMAP, label: 'Zoho Roadmap',   Icon: GraduationCap },
 ];
 
 const Sidebar = () => {
