@@ -3,6 +3,7 @@ import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { ChevronDown, ChevronUp, Clock, Zap, Star, BookOpen } from 'lucide-react';
 import Badge from '../ui/Badge.jsx';
+import LinkifiedText from '../ui/LinkifiedText.jsx';
 import SessionCard from './SessionCard.jsx';
 import { formatDurationSec } from '../../utils/sessionUtils.js';
 import { formatDisplay } from '../../utils/dateUtils.js';
@@ -139,7 +140,7 @@ const DaySummary = ({ dateStr, sessions, onEditSession }) => {
                   {summary.completed.map((c, i) => (
                     <li key={i} className="flex items-start gap-1.5 text-xs text-slate-600">
                       <span className="text-green-500 mt-0.5">✓</span>
-                      <span>{c}</span>
+                      <span className="whitespace-pre-wrap"><LinkifiedText text={c} /></span>
                     </li>
                   ))}
                 </ul>
@@ -154,7 +155,7 @@ const DaySummary = ({ dateStr, sessions, onEditSession }) => {
                   {summary.keyNotes.map((n, i) => (
                     <li key={i} className="flex items-start gap-1.5 text-xs text-slate-600">
                       <span className="text-amber-500 mt-0.5">★</span>
-                      <span className="whitespace-pre-wrap">{n}</span>
+                      <span className="whitespace-pre-wrap"><LinkifiedText text={n} /></span>
                     </li>
                   ))}
                 </ul>
@@ -169,7 +170,7 @@ const DaySummary = ({ dateStr, sessions, onEditSession }) => {
                   {summary.nextSteps.map((n, i) => (
                     <li key={i} className="flex items-start gap-1.5 text-xs text-slate-600">
                       <Zap size={11} className="text-sky-500 mt-0.5 flex-shrink-0" />
-                      <span>{n}</span>
+                      <span className="whitespace-pre-wrap"><LinkifiedText text={n} /></span>
                     </li>
                   ))}
                 </ul>

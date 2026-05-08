@@ -3,6 +3,7 @@ import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { ChevronDown, ChevronUp, BookOpen, Clock, Coffee, Pause, Pencil } from 'lucide-react';
 import Badge from '../ui/Badge.jsx';
+import LinkifiedText from '../ui/LinkifiedText.jsx';
 import EditSessionModal from './EditSessionModal.jsx';
 import { formatDurationSec, getSessionStats } from '../../utils/sessionUtils.js';
 import { formatDisplay } from '../../utils/dateUtils.js';
@@ -86,31 +87,31 @@ const SessionCard = ({ session, onEdit, showDate = true }) => {
             {session.details && (
               <div>
                 <p className="text-xs font-medium text-slate-500 mb-1">{en.study.details}</p>
-                <p className="text-sm text-slate-700 whitespace-pre-wrap">{session.details}</p>
+                <p className="text-sm text-slate-700 whitespace-pre-wrap"><LinkifiedText text={session.details} /></p>
               </div>
             )}
             {session.keyNotes && (
               <div>
                 <p className="text-xs font-medium text-slate-500 mb-1">{en.study.keyNotes}</p>
-                <p className="text-sm text-slate-700 whitespace-pre-wrap">{session.keyNotes}</p>
+                <p className="text-sm text-slate-700 whitespace-pre-wrap"><LinkifiedText text={session.keyNotes} /></p>
               </div>
             )}
             {session.completedWork && (
               <div>
                 <p className="text-xs font-medium text-slate-500 mb-1">{en.study.completedWork}</p>
-                <p className="text-sm text-slate-700">{session.completedWork}</p>
+                <p className="text-sm text-slate-700 whitespace-pre-wrap"><LinkifiedText text={session.completedWork} /></p>
               </div>
             )}
             {session.remainingWork && (
               <div>
                 <p className="text-xs font-medium text-slate-500 mb-1">{en.study.remainingWork}</p>
-                <p className="text-sm text-slate-700">{session.remainingWork}</p>
+                <p className="text-sm text-slate-700 whitespace-pre-wrap"><LinkifiedText text={session.remainingWork} /></p>
               </div>
             )}
             {session.nextStep && (
               <div>
                 <p className="text-xs font-medium text-slate-500 mb-1">{en.study.nextStep}</p>
-                <p className="text-sm text-slate-700">{session.nextStep}</p>
+                <p className="text-sm text-slate-700 whitespace-pre-wrap"><LinkifiedText text={session.nextStep} /></p>
               </div>
             )}
             <div className="flex items-center gap-4 flex-wrap">
