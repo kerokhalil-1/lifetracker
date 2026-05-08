@@ -185,6 +185,7 @@ const PerfPage = () => {
             <button
               key={f.value}
               onClick={() => setFilter(f.value)}
+              data-perf-label={`Perf filter: ${f.label}`}
               className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${filter === f.value ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
             >
               {f.label}

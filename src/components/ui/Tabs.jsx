@@ -8,6 +8,7 @@ const Tabs = ({ tabs, activeTab, onChange }) => (
         key={tab.value}
         type="button"
         onClick={() => onChange(tab.value)}
+        data-perf-label={`Tab: ${tab.label}`}
         className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-all focus:outline-none ${
           activeTab === tab.value
             ? 'bg-white text-slate-800 shadow-sm'
