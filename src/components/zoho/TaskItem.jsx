@@ -18,6 +18,7 @@ const TaskItem = ({ task, done, onToggle }) => {
       role="checkbox"
       aria-checked={done}
       tabIndex={0}
+      data-perf-label={`${done ? 'Uncheck' : 'Check'} task: ${task.title}`}
       onKeyDown={(e) => (e.key === ' ' || e.key === 'Enter') && onToggle(task.id)}
     >
       {/* Checkbox icon */}

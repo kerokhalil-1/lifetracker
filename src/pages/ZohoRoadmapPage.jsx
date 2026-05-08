@@ -119,6 +119,7 @@ const ZohoRoadmapPage = () => {
               key={f.value}
               type="button"
               onClick={() => setFilter(f.value)}
+              data-perf-label={`Filter roadmap: ${f.label}`}
               className={`px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-all ${
                 filter === f.value
                   ? 'bg-white text-slate-800 shadow-sm'
@@ -156,6 +157,7 @@ const ZohoRoadmapPage = () => {
             <button
               type="button"
               onClick={() => { setSearch(''); setFilter('all'); }}
+              data-perf-label="Clear roadmap filters"
               className="mt-2 text-sm text-sky-500 hover:text-sky-700"
             >
               Clear filters

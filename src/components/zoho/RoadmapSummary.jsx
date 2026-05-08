@@ -48,6 +48,7 @@ const RoadmapSummary = ({ stats, onJumpToPhase }) => {
                 type="button"
                 onClick={() => onJumpToPhase(phase.id)}
                 title={`Phase ${i + 1}: ${phase.title} — ${ps.done}/${ps.total}`}
+                data-perf-label={`Jump to Phase ${i + 1}: ${phase.title}`}
                 className="flex flex-col items-center gap-1 group"
               >
                 <span className="text-lg">{isComplete ? '✅' : phase.icon}</span>
@@ -86,6 +87,7 @@ const RoadmapSummary = ({ stats, onJumpToPhase }) => {
               onClick={() => onJumpToPhase(stats.nextTask.phase.id)}
               className="flex-shrink-0 mt-0.5 p-1.5 rounded-lg bg-sky-100 hover:bg-sky-200 text-sky-600 transition-colors"
               aria-label="Jump to phase"
+              data-perf-label={`Jump to next phase: ${stats.nextTask.phase.title}`}
             >
               <ArrowRight size={14} />
             </button>

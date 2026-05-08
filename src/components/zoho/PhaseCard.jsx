@@ -33,6 +33,7 @@ const PhaseCard = ({ phase, phaseIndex, phaseStat, isCollapsed, onToggleCollapse
         onClick={() => onToggleCollapsed(phase.id)}
         aria-expanded={!isCollapsed}
         aria-controls={`phase-body-${phase.id}`}
+        data-perf-label={`${isCollapsed ? 'Expand' : 'Collapse'} Phase ${phaseIndex + 1}: ${phase.title}`}
       >
         {/* Phase icon + number */}
         <span className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-lg ${colors.icon}`}>
@@ -105,6 +106,7 @@ const PhaseCard = ({ phase, phaseIndex, phaseStat, isCollapsed, onToggleCollapse
                     href={r.url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    data-perf-label={`Resource: ${r.title}`}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-sky-50 hover:text-sky-700 text-xs font-medium text-slate-600 transition-colors"
                   >
                     <ExternalLink size={11} />
@@ -131,6 +133,7 @@ const PhaseCard = ({ phase, phaseIndex, phaseStat, isCollapsed, onToggleCollapse
                 <button
                   type="button"
                   onClick={() => { setNoteValue(note); setEditingNote(true); }}
+                  data-perf-label={`Edit note: Phase ${phaseIndex + 1}`}
                   className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors"
                 >
                   <Pencil size={11} /> Edit
@@ -151,6 +154,7 @@ const PhaseCard = ({ phase, phaseIndex, phaseStat, isCollapsed, onToggleCollapse
                   <button
                     type="button"
                     onClick={handleSaveNote}
+                    data-perf-label={`Save note: Phase ${phaseIndex + 1}`}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold transition-colors"
                   >
                     <Check size={12} /> Save
@@ -158,6 +162,7 @@ const PhaseCard = ({ phase, phaseIndex, phaseStat, isCollapsed, onToggleCollapse
                   <button
                     type="button"
                     onClick={() => setEditingNote(false)}
+                    data-perf-label="Cancel note edit"
                     className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold transition-colors"
                   >
                     Cancel

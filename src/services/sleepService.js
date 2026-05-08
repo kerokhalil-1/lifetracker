@@ -27,6 +27,7 @@ const _last7Ts = new Map();
 // Bust all sleep caches on any write (saveSleepLog)
 const invalidateSleepCaches = (dateStr) => {
   _last7Cache.clear(); _last7Fetch.clear(); _last7Ts.clear();
+  _allLogsCache = null; _allLogsFetch = null; _allLogsTs = 0; // bust Progress page cache too
   if (dateStr) { _sleepLogCache.delete(dateStr); _sleepLogFetch.delete(dateStr); _sleepLogTs.delete(dateStr); }
   else { _sleepLogCache.clear(); _sleepLogFetch.clear(); _sleepLogTs.clear(); }
 };
@@ -76,12 +77,24 @@ export const getLast7Nights = (count = 7) => {
   return fetch;
 };
 
-export const getAllSleepLogs = () =>
-  timed('getAllSleepLogs', 'firestore', async () => {
+// getAllSleepLogs cache — used by Progress page; 5-min TTL; invalidated on saveSleepLog
+let _allLogsCache = null;
+let _allLogsFetch = null;
+let _allLogsTs = 0;
+const ALL_LOGS_TTL = 5 * 60 * 1000;
+
+export const getAllSleepLogs = () => {
+  if (_allLogsCache && Date.now() - _allLogsTs < ALL_LOGS_TTL) return Promise.resolve(_allLogsCache);
+  if (_allLogsFetch) return _allLogsFetch;
+  _allLogsFetch = timed('getAllSleepLogs', 'firestore', async () => {
     const q = query(collection(db, COLLECTIONS.SLEEP_LOGS), orderBy('date', 'desc'));
     const snap = await getDocs(q);
-    return snap.docs.map((d) => d.data());
-  });
+    _allLogsCache = snap.docs.map((d) => d.data());
+    _allLogsTs = Date.now();
+    return _allLogsCache;
+  }).finally(() => { _allLogsFetch = null; });
+  return _allLogsFetch;
+};
 
 export const getSettings = () => {
   if (_settingsCache) return Promise.resolve(_settingsCache);

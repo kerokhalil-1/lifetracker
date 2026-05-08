@@ -20,7 +20,15 @@ const _tasksByDateCache = new Map(); // dateStr → data array
 const _tasksByDateFetch = new Map(); // dateStr → in-flight promise
 const TASKS_TTL = 5 * 60 * 1000;
 const _tasksByDateTs = new Map();   // dateStr → cache timestamp
+// listAllTasks cache — used by Progress page; 5-min TTL; invalidated on any task write
+let _allTasksCache = null;
+let _allTasksFetch = null;
+let _allTasksTs = 0;
+const ALL_TASKS_TTL = 5 * 60 * 1000;
+const invalidateAllTasksCache = () => { _allTasksCache = null; _allTasksFetch = null; _allTasksTs = 0; };
+
 export const invalidateTasksCache = (dateStr) => {
+  invalidateAllTasksCache(); // bust listAllTasks whenever a per-date cache is busted
   if (dateStr) {
     _tasksByDateCache.delete(dateStr);
     _tasksByDateFetch.delete(dateStr);
@@ -105,9 +113,15 @@ export const listTasksByDate = (dateStr) => {
   return fetch;
 };
 
-export const listAllTasks = () =>
-  timed('listAllTasks', 'firestore', async () => {
+export const listAllTasks = () => {
+  if (_allTasksCache && Date.now() - _allTasksTs < ALL_TASKS_TTL) return Promise.resolve(_allTasksCache);
+  if (_allTasksFetch) return _allTasksFetch;
+  _allTasksFetch = timed('listAllTasks', 'firestore', async () => {
     const q = query(collection(db, COLLECTIONS.STUDY_TASKS), orderBy('scheduledDate', 'desc'));
     const snap = await getDocs(q);
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-  });
+    _allTasksCache = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    _allTasksTs = Date.now();
+    return _allTasksCache;
+  }).finally(() => { _allTasksFetch = null; });
+  return _allTasksFetch;
+};
