@@ -52,13 +52,22 @@ const SessionTab = ({ session: sessionHook, courses, history, study }) => {
     return (
       <div className="flex flex-col gap-4">
         <GoalBanner todayWorkSeconds={history.todayWorkSeconds} />
-        <Card className="flex flex-col items-center gap-5 py-10">
-          <div className="flex flex-col items-center gap-2 text-center">
-            <span className="text-4xl">📚</span>
-            <h2 className="text-xl font-bold text-slate-800">Ready to study?</h2>
-            <p className="text-sm text-slate-400 max-w-xs">Pick a course, start the timer, and track every minute of focused work.</p>
+        <Card className="flex flex-col items-center justify-center gap-6 py-14 px-6 text-center">
+          <span className="text-5xl">📚</span>
+          <div className="flex flex-col gap-2">
+            <h2 className="text-2xl font-bold text-slate-800">Ready to study?</h2>
+            <p className="text-sm text-slate-400 max-w-xs mx-auto leading-relaxed">
+              Pick a course, start the timer, and track every minute of focused work.
+            </p>
           </div>
-          <Button onClick={handleStudyNow} size="lg">{en.study.studyNow}</Button>
+          <Button
+            onClick={handleStudyNow}
+            size="lg"
+            data-perf-label="Study Now"
+            className="w-full sm:w-auto px-10"
+          >
+            {en.study.studyNow}
+          </Button>
         </Card>
         <CoursePickerModal
           isOpen={showPicker}
