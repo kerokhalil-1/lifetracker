@@ -199,11 +199,11 @@ const PerfPage = () => {
         </div>
 
         <div className="ml-auto flex gap-2">
-          <Button variant="secondary" size="sm" onClick={copyAll} disabled={entries.length === 0}>
+          <Button variant="secondary" size="sm" onClick={copyAll} disabled={entries.length === 0} data-perf-label="Copy all perf entries">
             {copied ? <><Check size={13} /> Copied!</> : <><Copy size={13} /> Copy all</>}
           </Button>
           {entries.length > 0 && (
-            <Button variant="danger" size="sm" onClick={clear}>
+            <Button variant="danger" size="sm" onClick={clear} data-perf-label="Clear perf entries">
               <Trash2 size={13} /> Clear
             </Button>
           )}
