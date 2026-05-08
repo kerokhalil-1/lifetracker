@@ -13,3 +13,12 @@ body {
 #root {
   min-height: 100vh;
 }
+
+/* Hide scrollbar on overflow-x-auto tab bars while keeping scroll behaviour */
+.scrollbar-none {
+  scrollbar-width: none;        /* Firefox */
+  -ms-overflow-style: none;     /* IE/Edge */
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;                /* Chrome/Safari/Android */
+}
