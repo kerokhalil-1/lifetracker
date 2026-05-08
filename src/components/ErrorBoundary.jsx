@@ -13,6 +13,8 @@ import { ROUTES } from '../constants/routes.js';
 const isChunkLoadError = (err) =>
   err?.message?.includes('Failed to fetch dynamically imported module') ||
   err?.message?.includes('Importing a module script failed') ||
+  err?.message?.includes('is not a valid JavaScript MIME type') ||   // Firebase 404 → HTML served instead of JS
+  err?.message?.includes('error loading dynamically imported module') || // Safari variant
   err?.name === 'ChunkLoadError';
 
 const RELOAD_FLAG = 'eb_chunk_reloaded';
