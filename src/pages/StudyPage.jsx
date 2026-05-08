@@ -17,6 +17,7 @@ import SessionTimer from '../components/study/SessionTimer.jsx';
 import SessionControls from '../components/study/SessionControls.jsx';
 import FinishSessionForm from '../components/study/FinishSessionForm.jsx';
 import DaySummary from '../components/study/DaySummary.jsx';
+import SessionTasksPanel from '../components/study/SessionTasksPanel.jsx';
 import GoalBanner from '../components/study/GoalBanner.jsx';
 import useStudy from '../hooks/useStudy.js';
 import useSession from '../hooks/useSession.js';
@@ -36,7 +37,7 @@ const buildTabs = (sessionActive) => [
 
 // ─── Session tab ─────────────────────────────────────────────────────────────
 
-const SessionTab = ({ session: sessionHook, courses, history }) => {
+const SessionTab = ({ session: sessionHook, courses, history, study }) => {
   const { status, session, elapsedWork, elapsedBreak, startSession, pauseSession, resumeSession, requestFinish, cancelFinish, submitFinish, cancelSession } = sessionHook;
   const [showPicker, setShowPicker] = useState(false);
 
@@ -113,6 +114,11 @@ const SessionTab = ({ session: sessionHook, courses, history }) => {
             onCancel={cancelSession}
           />
         </div>
+        {/* Today's tasks — visible while studying so you can check them off without switching tabs */}
+        <SessionTasksPanel
+          tasks={study.todayTasks}
+          onToggle={study.toggleTask}
+        />
       </Card>
     </div>
   );
@@ -187,8 +193,15 @@ const TasksTab = ({ study }) => {
 
 // ─── Topics tab ───────────────────────────────────────────────────────────────
 
-const TopicsTab = ({ study }) => {
+const TopicsTab = ({ study, history }) => {
   const { topics, loading, addTopic } = study;
+
+  // Unique topics covered across all finished sessions — shows what you've actually studied
+  const sessionTopics = [...new Set(
+    (history.sessions || [])
+      .filter((s) => s.status === 'finished')
+      .flatMap((s) => s.topicsCovered || [])
+  )].sort();
   const [showTopicModal, setShowTopicModal] = useState(false);
   const [search, setSearch] = useState('');
   const [tagFilter, setTagFilter] = useState('');
@@ -204,6 +217,22 @@ const TopicsTab = ({ study }) => {
 
   return (
     <>
+      {/* Topics derived from sessions */}
+      {sessionTopics.length > 0 && (
+        <div className="bg-sky-50 border border-sky-200 rounded-xl px-4 py-3">
+          <p className="text-xs font-semibold text-sky-600 uppercase tracking-wider mb-2">
+            From your sessions ({sessionTopics.length} unique topics)
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {sessionTopics.map((t, i) => (
+              <span key={i} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-sky-100 text-sky-700">
+                {t}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col gap-4">
         <div className="flex gap-2 flex-wrap items-center justify-between">
           <span className="text-sm text-slate-500">{topics.length} {en.study.topicsCount}</span>
@@ -244,13 +273,13 @@ const TopicsTab = ({ study }) => {
 // ─── History tab ──────────────────────────────────────────────────────────────
 
 const HistoryTab = ({ history }) => {
-  const { sessions, loading, editSession } = history;
+  const { sessions, tasksByDate, loading, editSession } = history;
   const finished = sessions.filter((s) => s.status === 'finished');
 
   if (loading) return <Spinner className="py-12" />;
   if (finished.length === 0) return <p className="text-sm text-slate-400 text-center py-12">{en.study.noHistory}</p>;
 
-  // Group sessions by date (desc order is preserved — sessions are already sorted by startedAt desc)
+  // Group sessions by date (desc order preserved — sessions sorted by startedAt desc)
   const byDate = [];
   const seen = new Map();
   for (const s of finished) {
@@ -269,6 +298,7 @@ const HistoryTab = ({ history }) => {
           key={dateStr}
           dateStr={dateStr}
           sessions={daySessions}
+          dayTasks={tasksByDate[dateStr] || []}
           onEditSession={editSession}
         />
       ))}
@@ -282,10 +312,12 @@ SessionTab.propTypes = {
   session: PropTypes.object.isRequired,
   courses: PropTypes.object.isRequired,
   history: PropTypes.object.isRequired,
+  study:   PropTypes.object.isRequired,
 };
 
-TasksTab.propTypes = { study: PropTypes.object.isRequired };
-TopicsTab.propTypes = { study: PropTypes.object.isRequired };
+TasksTab.propTypes  = { study: PropTypes.object.isRequired };
+TopicsTab.propTypes = { study: PropTypes.object.isRequired, history: PropTypes.object.isRequired };
+HistoryTab.propTypes = { history: PropTypes.object.isRequired };
 HistoryTab.propTypes = { history: PropTypes.object.isRequired };
 
 // ─── Root page ────────────────────────────────────────────────────────────────
@@ -317,10 +349,10 @@ const StudyPage = () => {
         <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
 
         {activeTab === 'session' && (
-          <SessionTab session={sessionHook} courses={coursesHook} history={historyHook} />
+          <SessionTab session={sessionHook} courses={coursesHook} history={historyHook} study={studyHook} />
         )}
         {activeTab === 'tasks' && <TasksTab study={studyHook} />}
-        {activeTab === 'topics' && <TopicsTab study={studyHook} />}
+        {activeTab === 'topics' && <TopicsTab study={studyHook} history={historyHook} />}
         {activeTab === 'history' && <HistoryTab history={historyHook} />}
       </div>
     </PageWrapper>
