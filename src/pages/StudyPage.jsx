@@ -193,15 +193,20 @@ const TasksTab = ({ study }) => {
 
 // ─── Topics tab ───────────────────────────────────────────────────────────────
 
+const PREVIEW_COUNT = 12; // chips shown before "show more"
+
 const TopicsTab = ({ study, history }) => {
   const { topics, loading, addTopic } = study;
 
-  // Unique topics covered across all finished sessions — shows what you've actually studied
+  // Unique topics covered across all finished sessions — collapsed by default
   const sessionTopics = [...new Set(
     (history.sessions || [])
       .filter((s) => s.status === 'finished')
       .flatMap((s) => s.topicsCovered || [])
   )].sort();
+  const [sessionTopicsExpanded, setSessionTopicsExpanded] = useState(false);
+  const visibleSessionTopics = sessionTopicsExpanded ? sessionTopics : sessionTopics.slice(0, PREVIEW_COUNT);
+
   const [showTopicModal, setShowTopicModal] = useState(false);
   const [search, setSearch] = useState('');
   const [tagFilter, setTagFilter] = useState('');
@@ -217,18 +222,35 @@ const TopicsTab = ({ study, history }) => {
 
   return (
     <>
-      {/* Topics derived from sessions */}
+      {/* Topics derived from sessions — collapsed by default, shows first 12 */}
       {sessionTopics.length > 0 && (
         <div className="bg-sky-50 border border-sky-200 rounded-xl px-4 py-3">
-          <p className="text-xs font-semibold text-sky-600 uppercase tracking-wider mb-2">
-            From your sessions ({sessionTopics.length} unique topics)
-          </p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-semibold text-sky-600 uppercase tracking-wider">
+              From your sessions · {sessionTopics.length} topics
+            </p>
+            {sessionTopics.length > PREVIEW_COUNT && (
+              <button
+                type="button"
+                onClick={() => setSessionTopicsExpanded((v) => !v)}
+                data-perf-label={sessionTopicsExpanded ? 'Collapse session topics' : 'Expand session topics'}
+                className="text-xs text-sky-600 hover:text-sky-800 font-medium transition-colors"
+              >
+                {sessionTopicsExpanded ? 'Show less ↑' : `Show all ${sessionTopics.length} ↓`}
+              </button>
+            )}
+          </div>
           <div className="flex flex-wrap gap-1.5">
-            {sessionTopics.map((t, i) => (
+            {visibleSessionTopics.map((t, i) => (
               <span key={i} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-sky-100 text-sky-700">
                 {t}
               </span>
             ))}
+            {!sessionTopicsExpanded && sessionTopics.length > PREVIEW_COUNT && (
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-500">
+                +{sessionTopics.length - PREVIEW_COUNT} more
+              </span>
+            )}
           </div>
         </div>
       )}
