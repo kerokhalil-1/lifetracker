@@ -16,7 +16,7 @@ import CoursePickerModal from '../components/study/CoursePickerModal.jsx';
 import SessionTimer from '../components/study/SessionTimer.jsx';
 import SessionControls from '../components/study/SessionControls.jsx';
 import FinishSessionForm from '../components/study/FinishSessionForm.jsx';
-import SessionCard from '../components/study/SessionCard.jsx';
+import DaySummary from '../components/study/DaySummary.jsx';
 import GoalBanner from '../components/study/GoalBanner.jsx';
 import useStudy from '../hooks/useStudy.js';
 import useSession from '../hooks/useSession.js';
@@ -244,15 +244,34 @@ const TopicsTab = ({ study }) => {
 // ─── History tab ──────────────────────────────────────────────────────────────
 
 const HistoryTab = ({ history }) => {
-  const { sessions, loading } = history;
+  const { sessions, loading, editSession } = history;
   const finished = sessions.filter((s) => s.status === 'finished');
 
   if (loading) return <Spinner className="py-12" />;
   if (finished.length === 0) return <p className="text-sm text-slate-400 text-center py-12">{en.study.noHistory}</p>;
 
+  // Group sessions by date (desc order is preserved — sessions are already sorted by startedAt desc)
+  const byDate = [];
+  const seen = new Map();
+  for (const s of finished) {
+    const d = s.date || 'unknown';
+    if (!seen.has(d)) {
+      seen.set(d, []);
+      byDate.push({ dateStr: d, sessions: seen.get(d) });
+    }
+    seen.get(d).push(s);
+  }
+
   return (
-    <div className="flex flex-col gap-3">
-      {finished.map((s) => <SessionCard key={s.id} session={s} />)}
+    <div className="flex flex-col gap-4">
+      {byDate.map(({ dateStr, sessions: daySessions }) => (
+        <DaySummary
+          key={dateStr}
+          dateStr={dateStr}
+          sessions={daySessions}
+          onEditSession={editSession}
+        />
+      ))}
     </div>
   );
 };

@@ -1,6 +1,6 @@
-// Hook for loading past study sessions for the history tab
+// Hook for loading and editing past study sessions (history tab)
 import { useState, useEffect, useCallback } from 'react';
-import { listRecentSessions } from '../services/sessionService.js';
+import { listRecentSessions, updateSession, invalidateSessionsCache } from '../services/sessionService.js';
 import { useErrorLog } from '../context/ErrorLogContext.jsx';
 import { today } from '../utils/dateUtils.js';
 
@@ -12,7 +12,7 @@ const useSessionHistory = () => {
   const load = useCallback(async () => {
     try {
       setLoading(true);
-      const list = await listRecentSessions(30);
+      const list = await listRecentSessions(50);
       setSessions(list);
     } catch (err) {
       addError('useSessionHistory', err);
@@ -23,12 +23,27 @@ const useSessionHistory = () => {
 
   useEffect(() => { load(); }, [load]);
 
+  // Edit a finished session — bust cache so next load is fresh
+  const editSession = useCallback(async (id, updates) => {
+    try {
+      await updateSession(id, updates);
+      invalidateSessionsCache();
+      // Optimistically update local state for instant feedback
+      setSessions((prev) =>
+        prev.map((s) => s.id === id ? { ...s, ...updates } : s)
+      );
+    } catch (err) {
+      addError('useSessionHistory.editSession', err);
+      throw err; // rethrow so EditSessionModal can show the error
+    }
+  }, [addError]);
+
   // Total work seconds across all finished sessions today (for goal banner)
   const todayWorkSeconds = sessions
     .filter((s) => s.status === 'finished' && s.date === today())
     .reduce((sum, s) => sum + (s.totalWorkSeconds || 0), 0);
 
-  return { sessions, loading, todayWorkSeconds, reload: load };
+  return { sessions, loading, todayWorkSeconds, reload: load, editSession };
 };
 
 export default useSessionHistory;
